@@ -1,50 +1,67 @@
-# Welcome to your Expo app 👋
+# ⚖️ Verdict - Le Jeu de Jugement Ultime
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg) ![Expo](https://img.shields.io/badge/Runs%20with-Expo-black.svg) ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)
 
-## Get started
+**Verdict** est l'application de soirée qui va révéler ce que vos amis pensent *vraiment* de vous.
+Jugez vos potes, révélez des dossiers, et préparez-vous à boire (avec modération).
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 📱 Aperçu
 
-2. Start the app
+| Menu Principal | Le Jeu (Swipe) | Mode Sombre |
+|:---:|:---:|:---:|
+| <img src="./assets/images/icon.png" width="100"> | *Ajoute un screen ici* | *Ajoute un screen ici* |
 
-   ```bash
-   npx expo start
-   ```
+## ✨ Fonctionnalités
 
-In the output, you'll find options to open the app in a
+* **Mécanique de Swipe :** Gauche pour *Coupable* (😈), Droite pour *Innocent* (😇).
+* **Modes de Jeu :**
+    * 😇 **Soft :** Pour briser la glace en douceur.
+    * 😈 **Hot :** Pour faire monter la température.
+    * ☠️ **Hardcore :** Pour les soirées qui dérapent.
+* **Ambiance Immersive :**
+    * Animations Lottie (Ange vs Démon).
+    * Effets sonores (Marteau de juge, Validation).
+    * Retours haptiques (Vibrations) à chaque action.
+* **Système Premium :** Achat In-App (simulation) pour débloquer les modes avancés.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 🛠️ Stack Technique
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+* **Framework :** [React Native](https://reactnative.dev/) avec [Expo](https://expo.dev/).
+* **Navigation :** Expo Router.
+* **Design :** StyleSheet, LinearGradient.
+* **Animations :** Lottie React Native.
+* **Interactions :** React Native Deck Swiper, Expo Haptics, Expo AV (Audio).
+* **Stockage :** AsyncStorage (Persistance des données locales).
 
-## Get a fresh project
+## 🚀 Installation & Lancement
 
-When you're ready, run:
+1.  **Cloner le projet :**
+    ```bash
+    git clone [https://github.com/TON_NOM_UTILISATEUR/verdict.git](https://github.com/TON_NOM_UTILISATEUR/verdict.git)
+    cd verdict
+    ```
 
-```bash
-npm run reset-project
-```
+2.  **Installer les dépendances :**
+    ```bash
+    npm install
+    # ou
+    yarn install
+    ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+3.  **Lancer le serveur de développement :**
+    ```bash
+    npx expo start -c
+    ```
 
-## Learn more
+4.  **Tester :** Scanne le QR code avec l'application **Expo Go** sur ton téléphone.
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📄 Mentions Légales
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Ce jeu est à but humoristique. L'abus d'alcool est dangereux pour la santé.
+Consultez notre politique de confidentialité ici : [Lien vers ta page Notion]
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Made with ❤️ (and a bit of chaos) by **[Ton Prénom]**.
