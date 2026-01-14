@@ -1,98 +1,274 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Image, Modal } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const router = useRouter();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  // --- ÉTATS ---
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPack, setSelectedPack] = useState(''); // 'hot' ou 'hard'
+  const [isPremium, setIsPremium] = useState(false); 
+
+  // Vérifie le statut Premium à chaque fois qu'on affiche l'écran
+  useFocusEffect(
+    useCallback(() => {
+      checkPremiumStatus();
+    }, [])
+  );
+
+  const checkPremiumStatus = async () => {
+    try {
+      const value = await AsyncStorage.getItem('is_premium');
+      if (value === 'true') {
+        setIsPremium(true);
+      }
+    } catch (e) {
+      console.log("Erreur lecture mémoire");
+    }
+  };
+
+  // Gère le clic sur un pack
+  const handlePackPress = (mode: string) => {
+    // Si c'est le pack Soft OU si le joueur a payé -> On lance
+    if (mode === 'soft' || isPremium) {
+      router.push({ pathname: "/game", params: { mode: mode } });
+    } else {
+      // Sinon -> On bloque
+      setSelectedPack(mode);
+      setModalVisible(true);
+    }
+  };
+
+  // Redirection vers le paywall depuis la pop-up
+  const goToPaywall = () => {
+    setModalVisible(false);
+    router.push('/paywall');
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
+      <LinearGradient
+        colors={['#1a0033', '#000000']}
+        style={styles.background}
+      >
+        <View style={styles.cardContainer}>
+          
+          {/* HEADER */}
+          <View style={styles.header}>
+            <View style={styles.logoShadowWrapper}>
+               <Image source={require('../../assets/images/logo-verdict.png')} style={styles.logoImage} />
+            </View>
+            <View style={styles.titleWrapper}>
+              <Text style={styles.title}>VERDICT</Text>
+            </View>
+          </View>
+
+          {/* BOUTON PREMIUM OU BADGE VIP */}
+          {!isPremium ? (
+            <TouchableOpacity style={styles.premiumButton} onPress={() => router.push('/paywall')}>
+              <Text style={styles.premiumText}>💎 Débloquer la version PRO</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.premiumBadgeActive}>
+              <Text style={styles.premiumBadgeText}>👑 MEMBRE VIP ACTIF</Text>
+            </View>
+          )}
+
+          {/* MENU DES PACKS */}
+          <View style={styles.menuContainer}>
+            
+            {/* Pack Soft */}
+            <TouchableOpacity style={[styles.button, styles.btnSoft]} onPress={() => handlePackPress('soft')}>
+              <View style={styles.textWrapper}>
+                <Text style={styles.btnTitle}>Pack Soft 😇</Text>
+                {!isPremium && <Text style={styles.btnSub}>GRATUIT</Text>}
+              </View>
+            </TouchableOpacity>
+
+            {/* Pack Hot */}
+            <TouchableOpacity style={[styles.button, styles.btnHot]} onPress={() => handlePackPress('hot')}>
+                <Text style={styles.btnTitle}>Pack Hot 😈</Text>
+                {!isPremium && <Text style={styles.lock}>🔒</Text>}
+            </TouchableOpacity>
+
+            {/* Pack Hardcore */}
+            <TouchableOpacity style={[styles.button, styles.btnHard]} onPress={() => handlePackPress('hard')}>
+                <Text style={styles.btnTitle}>Pack Hardcore ☠️</Text>
+                {!isPremium && <Text style={styles.lock}>🔒</Text>}
+            </TouchableOpacity>
+
+          </View>
+
+          {/* Bouton Règles */}
+          <TouchableOpacity style={styles.rulesBtnSmall} onPress={() => router.push('/rules')}>
+            <Text style={styles.rulesTextSmall}>Règles du jeu</Text>
+          </TouchableOpacity>
+
+        </View>
+      </LinearGradient>
+
+      {/* MODAL DE BLOCAGE */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            
+            <Text style={styles.modalEmoji}>
+              {selectedPack === 'hot' ? '😈' : '☠️'}
+            </Text>
+            
+            <Text style={styles.modalTitle}>DÉBLOQUER LE PACK</Text>
+            
+            <Text style={styles.modalDesc}>
+              Ce pack est réservé aux membres PRO.
+            </Text>
+
+            <View style={styles.priceTag}>
+              <Text style={styles.priceText}>4,99 € / vie</Text>
+            </View>
+
+            {/* Bouton Voir l'offre */}
+            <TouchableOpacity style={styles.btnBuy} onPress={goToPaywall}>
+              <Text style={styles.btnBuyText}>VOIR L'OFFRE 🔥</Text>
+            </TouchableOpacity>
+
+            {/* Bouton Fermer */}
+            <TouchableOpacity style={styles.btnClose} onPress={() => setModalVisible(false)}>
+              <Text style={styles.btnCloseText}>Plus tard</Text>
+            </TouchableOpacity>
+
+          </View>
+        </View>
+      </Modal>
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  container: { flex: 1 },
+  background: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
+  cardContainer: {
+    width: '100%', maxWidth: 400, paddingVertical: 30, backgroundColor: 'rgba(20, 0, 40, 0.9)', 
+    borderRadius: 30, borderWidth: 2, borderColor: '#D400FF', paddingHorizontal: 25,
+    shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 20, elevation: 10, alignItems: 'center',
+  },
+  header: { marginBottom: 20, alignItems: 'center' },
+  logoShadowWrapper: { shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 20, elevation: 15, marginBottom: 5 },
+  logoImage: { width: 250, height: 250, resizeMode: 'contain' },
+  titleWrapper: { marginTop: -20, paddingHorizontal: 20, paddingVertical: 5, borderRadius: 50, shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20, backgroundColor: 'rgba(212, 0, 255, 0.01)' },
+  title: { fontSize: 46, fontWeight: '900', color: 'white', textShadowColor: '#D400FF', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10, letterSpacing: 2, fontStyle: 'italic' },
+  
+  // Style bouton Premium (Doré)
+  premiumButton: {
+    marginBottom: 25,
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#FFD700',
+    alignSelf: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  premiumText: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+    fontSize: 16,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  // Style Badge Actif (Vert)
+  premiumBadgeActive: {
+    marginBottom: 25,
+    backgroundColor: 'rgba(76, 217, 100, 0.15)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#4CD964',
+    alignSelf: 'center',
+  },
+  premiumBadgeText: {
+    color: '#4CD964',
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+
+  menuContainer: { width: '100%', gap: 15, marginBottom: 25 },
+  button: { paddingVertical: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', position: 'relative', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 5 },
+  textWrapper: { alignItems: 'center' },
+  btnSoft: { backgroundColor: '#0057FF' },
+  btnHot: { backgroundColor: '#C71F1F' },
+  btnHard: { backgroundColor: '#5E17A8' },
+  btnTitle: { color: 'white', fontSize: 20, fontWeight: 'bold' },
+  btnSub: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '600', marginTop: 2 },
+  lock: { fontSize: 22, position: 'absolute', right: 20, opacity: 0.8 },
+  
+  rulesBtnSmall: { marginTop: 10, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 50, alignItems: 'center', borderWidth: 1, borderColor: '#D400FF', backgroundColor: 'rgba(212, 0, 255, 0.15)', shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10 },
+  rulesTextSmall: { color: '#E0AAFF', fontSize: 16, fontWeight: '600', letterSpacing: 0.5 },
+
+  // Styles de la Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    padding: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  modalContent: {
+    width: '100%',
+    maxWidth: 350,
+    backgroundColor: '#1a0033',
+    borderRadius: 25,
+    padding: 30,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 20,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  modalEmoji: { fontSize: 60, marginBottom: 15 },
+  modalTitle: {
+    color: 'white', fontSize: 24, fontWeight: '900', textAlign: 'center', marginBottom: 10,
+    textTransform: 'uppercase', letterSpacing: 1
   },
+  modalDesc: {
+    color: '#ccc', fontSize: 16, textAlign: 'center', marginBottom: 25, lineHeight: 22
+  },
+  priceTag: {
+    backgroundColor: 'rgba(255, 215, 0, 0.15)',
+    paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, marginBottom: 20,
+    borderWidth: 1, borderColor: '#FFD700'
+  },
+  priceText: { color: '#FFD700', fontSize: 22, fontWeight: 'bold' },
+  
+  btnBuy: {
+    width: '100%', backgroundColor: '#FFD700',
+    paddingVertical: 15, borderRadius: 50, alignItems: 'center', marginBottom: 15,
+    shadowColor: '#FFD700', shadowOpacity: 0.4, shadowRadius: 10, elevation: 5
+  },
+  btnBuyText: { color: '#1a0033', fontSize: 18, fontWeight: 'bold' },
+  
+  btnClose: { padding: 10 },
+  btnCloseText: { color: '#aaa', fontSize: 16, textDecorationLine: 'underline' }
 });
