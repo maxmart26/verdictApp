@@ -1,27 +1,70 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Purchases, { PurchasesPackage } from 'react-native-purchases';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  
+  // États pour stocker le produit récupéré depuis le store et l'état de chargement
+  const [pkg, setPkg] = useState<PurchasesPackage | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
-  // Fonction pour simuler l'achat et SAUVEGARDER le statut
+  // 1. Charger l'offre configurée dans RevenueCat (Tableau de bord)
+  useEffect(() => {
+    const loadOfferings = async () => {
+      try {
+        const offerings = await Purchases.getOfferings();
+        // On suppose que l'offering s'appelle 'current' et contient au moins un package
+        if (offerings.current !== null && offerings.current.availablePackages.length !== 0) {
+          setPkg(offerings.current.availablePackages[0]);
+        }
+      } catch (e) {
+        console.log("Erreur chargement offres", e);
+        Alert.alert("Erreur", "Impossible de charger les prix. Vérifiez votre connexion.");
+      }
+    };
+    loadOfferings();
+  }, []);
+
+  // 2. Fonction d'achat
   const handleBuy = async () => {
+    if (!pkg) return;
+    setIsPurchasing(true);
     try {
-      // On écrit dans la mémoire du téléphone que c'est payé
-      await AsyncStorage.setItem('is_premium', 'true');
+      const { customerInfo } = await Purchases.purchasePackage(pkg);
       
-      Alert.alert(
-        "Félicitations ! 🥂", 
-        "Vous êtes maintenant membre PREMIUM. Profitez bien !",
-        [{ 
-          text: "Let's Go !", 
-          onPress: () => router.back() // Retour au menu
-        }]
-      );
+      if (typeof customerInfo.entitlements.active['pro'] !== "undefined") {
+        Alert.alert(
+          "Félicitations ! 🥂", 
+          "Vous êtes maintenant membre PREMIUM. Profitez bien !",
+          [{ text: "Let's Go !", onPress: () => router.back() }]
+        );
+      }
+    } catch (e: any) {
+      if (!e.userCancelled) {
+        Alert.alert("Erreur", e.message);
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  // 3. Fonction Restaurer les achats (Obligatoire pour Apple)
+  const restorePurchases = async () => {
+    setIsPurchasing(true);
+    try {
+      const restore = await Purchases.restorePurchases();
+      if (restore.entitlements.active['pro']) {
+        Alert.alert("Succès", "Vos achats ont été restaurés.");
+        router.back();
+      } else {
+        Alert.alert("Info", "Aucun achat précédent trouvé.");
+      }
     } catch (e) {
-      Alert.alert("Erreur", "Impossible de sauvegarder l'achat.");
+      Alert.alert("Erreur", "Impossible de restaurer.");
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
@@ -43,39 +86,50 @@ export default function PaywallScreen() {
 
         {/* Liste des avantages */}
         <View style={styles.featuresContainer}>
-          <FeatureItem emoji="🔥" title="Mode Hardcore et tout les autres" desc="Accès aux questions les plus osées." />
+          <FeatureItem emoji="🔥" title="Mode Hardcore" desc="Accès aux questions les plus osées." />
           <FeatureItem emoji="🚫" title="Zéro Publicité" desc="Une expérience fluide, sans coupure." />
-          <FeatureItem emoji="🚀" title="Accès Futur Garanti" desc="Tous les prochains modes inclus gratuitement." />
+          <FeatureItem emoji="🚀" title="À Vie" desc="Payez une fois, gardez-le pour toujours." />
           <FeatureItem emoji="❤️" title="Soutien Créateur" desc="Aidez un développeur indépendant !" />
         </View>
 
         {/* Prix et Bouton d'action */}
         <View style={styles.offerContainer}>
-          <Text style={styles.price}>4,99 € <Text style={styles.perYear}>/ à vie</Text></Text>
+          
+          {pkg ? (
+            <Text style={styles.price}>{pkg.product.priceString} <Text style={styles.perYear}>/ à vie</Text></Text>
+          ) : (
+             // Spinner de chargement si le prix n'est pas encore arrivé du Store
+             <ActivityIndicator size="large" color="#FF2E93" style={{marginBottom: 10}} />
+          )}
+
           <Text style={styles.promoText}>Offre de lancement unique</Text>
 
-          <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
-            <Text style={styles.buyButtonText}>DÉBLOQUER TOUT MAINTENANT</Text>
+          <TouchableOpacity 
+            style={[styles.buyButton, (!pkg || isPurchasing) && { opacity: 0.7 }]} 
+            onPress={handleBuy}
+            disabled={!pkg || isPurchasing}
+          >
+            <Text style={styles.buyButtonText}>
+              {isPurchasing ? "Validation..." : "DÉBLOQUER TOUT"}
+            </Text>
           </TouchableOpacity>
           
-          <Text style={styles.guarantee}>🔒 Paiement sécurisé</Text>
+          <Text style={styles.guarantee}>🔒 Paiement sécurisé via Store</Text>
         </View>
 
-        {/* Liens légaux (MIS À JOUR ICI 👇) */}
+        {/* Liens légaux */}
         <View style={styles.legalContainer}>
-          <TouchableOpacity onPress={() => Alert.alert("Info", "Rien à restaurer pour le moment (Mode Simulation).")}>
+          <TouchableOpacity onPress={restorePurchases}>
             <Text style={styles.legalText}>Restaurer les achats</Text>
           </TouchableOpacity>
           
           <View style={styles.legalRow}>
-            {/* Lien vers la page Mentions Légales */}
             <TouchableOpacity onPress={() => router.push('/legal')}>
                 <Text style={styles.legalTextSmall}>Conditions</Text>
             </TouchableOpacity>
             
             <Text style={styles.legalTextSmall}> • </Text>
             
-            {/* Lien vers la page Mentions Légales */}
             <TouchableOpacity onPress={() => router.push('/legal')}>
                 <Text style={styles.legalTextSmall}>Confidentialité</Text>
             </TouchableOpacity>

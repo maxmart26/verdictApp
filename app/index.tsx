@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, Modal } from 'react-na
 import { useRouter, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Purchases from 'react-native-purchases'; // Intégration RevenueCat
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function HomeScreen() {
   const [selectedPack, setSelectedPack] = useState(''); // 'hot' ou 'hard'
   const [isPremium, setIsPremium] = useState(false); 
 
-  // Vérifie le statut Premium à chaque fois qu'on affiche l'écran
+  // Vérifie le statut Premium à chaque fois qu'on affiche l'écran via RevenueCat
   useFocusEffect(
     useCallback(() => {
       checkPremiumStatus();
@@ -22,12 +22,15 @@ export default function HomeScreen() {
 
   const checkPremiumStatus = async () => {
     try {
-      const value = await AsyncStorage.getItem('is_premium');
-      if (value === 'true') {
+      const customerInfo = await Purchases.getCustomerInfo();
+      // On vérifie si l'entitlement 'pro' est actif
+      if (customerInfo.entitlements.active['pro']) {
         setIsPremium(true);
+      } else {
+        setIsPremium(false);
       }
     } catch (e) {
-      console.log("Erreur lecture mémoire");
+      console.log("Erreur vérification statut", e);
     }
   };
 
@@ -62,7 +65,7 @@ export default function HomeScreen() {
           {/* HEADER */}
           <View style={styles.header}>
             <View style={styles.logoShadowWrapper}>
-               <Image source={require('../../assets/images/logo-verdict.png')} style={styles.logoImage} />
+               <Image source={require('../assets/images/logo-verdict.png')} style={styles.logoImage} />
             </View>
             <View style={styles.titleWrapper}>
               <Text style={styles.title}>VERDICT</Text>
@@ -134,7 +137,8 @@ export default function HomeScreen() {
             </Text>
 
             <View style={styles.priceTag}>
-              <Text style={styles.priceText}>4,99 € / vie</Text>
+              {/* On met un prix générique ici, le vrai prix est sur le paywall */}
+              <Text style={styles.priceText}>Version Complète</Text>
             </View>
 
             {/* Bouton Voir l'offre */}
@@ -169,7 +173,6 @@ const styles = StyleSheet.create({
   titleWrapper: { marginTop: -20, paddingHorizontal: 20, paddingVertical: 5, borderRadius: 50, shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 30, elevation: 20, backgroundColor: 'rgba(212, 0, 255, 0.01)' },
   title: { fontSize: 46, fontWeight: '900', color: 'white', textShadowColor: '#D400FF', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10, letterSpacing: 2, fontStyle: 'italic' },
   
-  // Style bouton Premium (Doré)
   premiumButton: {
     marginBottom: 25,
     backgroundColor: 'rgba(255, 215, 0, 0.1)',
@@ -193,7 +196,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Style Badge Actif (Vert)
   premiumBadgeActive: {
     marginBottom: 25,
     backgroundColor: 'rgba(76, 217, 100, 0.15)',
@@ -224,7 +226,6 @@ const styles = StyleSheet.create({
   rulesBtnSmall: { marginTop: 10, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 50, alignItems: 'center', borderWidth: 1, borderColor: '#D400FF', backgroundColor: 'rgba(212, 0, 255, 0.15)', shadowColor: '#D400FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 10 },
   rulesTextSmall: { color: '#E0AAFF', fontSize: 16, fontWeight: '600', letterSpacing: 0.5 },
 
-  // Styles de la Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
